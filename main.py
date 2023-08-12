@@ -1,6 +1,4 @@
-import copy
-
-import pygame, sys, math, random
+import pygame, sys, random
 from Button import Button
 from config import *
 
@@ -32,7 +30,6 @@ def check_tetro_borders(grid, pos, move, tetro_code, tetro_n):
     # checking out borders for new position
     for i in range(4):
         if not (0 <= (new_pos_y + tetro_code[i][1]) < BOARD_HEIGHT) or not (0 <= (new_pos_x + tetro_code[i][0]) < BOARD_WIDTH):
-            print(new_pos_x + tetro_code[i][0])
             return False
 
     clear_pos(grid, pos, tetro_code)
@@ -81,29 +78,47 @@ def get_fall_cells(grid, tetro_pos, tetro_code):
     x = tetro_pos[0]
     y = tetro_pos[1]
     fall_cells = []
+    end_pos = (x, y)
 
     if (0 <= x < BOARD_WIDTH) and (0 <= y < BOARD_HEIGHT):
-        for i in range(y + 2, BOARD_HEIGHT):
-            end = False
-            cells = []
+        end = False
 
-            for j in range(4):
-                print("for y = ", y, " and x = ", x,  ": ", i + tetro_code[j][1], x + tetro_code[j][0])
-                if grid[i + tetro_code[j][1]][x + tetro_code[j][0]] == 0:
-                    cells.append((x + tetro_code[j][0], i + tetro_code[j][1]))
-                else:
-                    cells = []
+        for yi in range(y + 1, BOARD_HEIGHT):
+
+            for i in range(4):
+                if check_own_cells((x + tetro_code[i][0], yi + tetro_code[i][1]), tetro_pos, tetro_code):
+                    continue
+
+                if (yi + tetro_code[i][1]) >= BOARD_HEIGHT or 0 < (x + tetro_code[i][0]) >= BOARD_WIDTH:
+                    continue
+
+                if grid[yi + tetro_code[i][1]][x + tetro_code[i][0]] != 0:
+                    end_pos = (x, yi - 1)
+                    end = True
+                    break
+
+                if (yi + tetro_code[i][1]) == (BOARD_HEIGHT - 1):
+                    end_pos = (x, yi)
                     end = True
                     break
 
             if end:
                 break
-            else:
-                fall_cells = cells
+
+        for i in range(4):
+            fall_cells.append((end_pos[0] + tetro_code[i][0], end_pos[1] + tetro_code[i][1]))
 
         return fall_cells
     else:
         return []
+
+
+# checks out does cell belong to given tetromino
+def check_own_cells(cell_pos, tetro_pos, tetro_code):
+    for i in range(4):
+        if (cell_pos[0] == (tetro_pos[0] + tetro_code[i][0])) and (cell_pos[1] == (tetro_pos[1] + tetro_code[i][1])):
+            return True
+    return False
 
 
 background_image = get_image("back.png")
@@ -187,7 +202,7 @@ def play():
 
         mouse_pos = pygame.mouse.get_pos()
 
-        SCREEN.blit(background_image, (0, 0))
+        SCREEN.fill("black")
 
         SCREEN.blit(menu_text, menu_rect)
         SCREEN.blit(next_text, next_rect)
@@ -247,35 +262,31 @@ def play():
         # board drawing
         for i in range(0, BOARD_WIDTH):
             for j in range(0, BOARD_HEIGHT):
-                pygame.draw.rect(SCREEN, "white", pygame.Rect(board_begin_x + i * TILE_SIZE,
+                pygame.draw.rect(SCREEN, "#575353", pygame.Rect(board_begin_x + i * TILE_SIZE,
                                                               board_begin_y + j * TILE_SIZE,
                                                               TILE_SIZE,
-                                                              TILE_SIZE), 1)
-                pygame.draw.rect(SCREEN, "black", pygame.Rect(board_begin_x + i * TILE_SIZE + 1,
-                                                              board_begin_y + j * TILE_SIZE + 1,
-                                                              TILE_SIZE - 2,
-                                                              TILE_SIZE - 2))
+                                                              TILE_SIZE), grid_thick)
 
                 if grid[j][i] != 0:
-                    pygame.draw.rect(SCREEN, tetro_colors[grid[j][i]], pygame.Rect(board_begin_x + i * TILE_SIZE + 3,
-                                                              board_begin_y + j * TILE_SIZE + 3,
-                                                              TILE_SIZE - 6,
-                                                              TILE_SIZE - 6))
+                    pygame.draw.rect(SCREEN, tetro_colors[grid[j][i]], pygame.Rect(board_begin_x + i * TILE_SIZE + 2,
+                                                              board_begin_y + j * TILE_SIZE + 2,
+                                                              TILE_SIZE - 4,
+                                                              TILE_SIZE - 4), 0, 2)
 
         # highlighting fall positions
 
-        # for cell in get_fall_cells(grid, curr_fig_pos, curr_fig_code):
-        #     pygame.draw.rect(SCREEN, "red", pygame.Rect(board_begin_x + cell[0] * TILE_SIZE,
-        #                                                   board_begin_y + cell[1] * TILE_SIZE,
-        #                                                   TILE_SIZE,
-        #                                                   TILE_SIZE), 1)
+        for cell in get_fall_cells(grid, curr_fig_pos, curr_fig_code):
+            pygame.draw.rect(SCREEN, tetro_colors[curr_fig_n], pygame.Rect(board_begin_x + cell[0] * TILE_SIZE + 2,
+                                                          board_begin_y + cell[1] * TILE_SIZE + 2,
+                                                          TILE_SIZE - 4,
+                                                          TILE_SIZE - 4), 2, 5)
 
         # display next figure
         for i in range(4):
             pygame.draw.rect(SCREEN, "white", pygame.Rect(next_pos[0] + tetro_codes[next_fig_n][i][0] * TILE_SIZE,
                                                           next_pos[1] + tetro_codes[next_fig_n][i][1] * TILE_SIZE,
                                                           TILE_SIZE,
-                                                          TILE_SIZE), 2)
+                                                          TILE_SIZE), grid_thick)
             pygame.draw.rect(SCREEN, tetro_colors[next_fig_n],
                              pygame.Rect(next_pos[0] + tetro_codes[next_fig_n][i][0] * TILE_SIZE + 2,
                                          next_pos[1] + tetro_codes[next_fig_n][i][1] * TILE_SIZE + 2,
