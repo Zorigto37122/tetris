@@ -9,6 +9,7 @@ BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
 
 move_time = 0.4  # seconds
+SCORE_NUMBER = 500
 
 grid_thick = 1
 tetro_codes = [[[-1, -1], [-1, 0], [0, 0], [1, 0]],

@@ -11,6 +11,8 @@ WINDOW_HEIGHT = SCREEN.get_height()
 WINDOW_CENTER_X = WINDOW_WIDTH / 2
 WINDOW_CENTER_Y = WINDOW_HEIGHT / 2
 
+SCORE = 0
+
 
 clock = pygame.time.Clock()
 
@@ -122,6 +124,30 @@ def check_own_cells(cell_pos, tetro_pos, tetro_code):
     return False
 
 
+def remove_line(grid, line_n):
+    if not (0 <= line_n < BOARD_HEIGHT):
+        return -1
+
+    for i in range(line_n, 0, -1):
+        print(grid[i])
+        grid[i] = grid[i - 1].copy()
+
+
+def get_full_lines(grid):
+    lines = []
+
+    for i in range(BOARD_HEIGHT):
+        full = True
+        for j in range(BOARD_WIDTH):
+            if grid[i][j] == 0:
+                full = False
+                break
+        if full:
+            lines.append(i)
+
+    return lines
+
+
 background_image = get_image("back.png")
 background_image = pygame.transform.scale(background_image, (WINDOW_WIDTH, WINDOW_HEIGHT))
 
@@ -174,6 +200,8 @@ def settings():
 def play():
     global move_time
 
+    SCORE = 0
+
     menu_text = get_font("domkrat-bold.ttf", 90).render("TETRIS", True, "White")
     menu_rect = menu_text.get_rect()
     menu_rect.center = (WINDOW_WIDTH / 2, 70)
@@ -182,6 +210,14 @@ def play():
     next_rect = next_text.get_rect()
     next_rect.center = (WINDOW_WIDTH * 0.73, WINDOW_HEIGHT * 0.23)
     next_pos = (next_rect.center[0] * 0.985, next_rect.center[1] + TILE_SIZE * 2.5)
+
+    score_text = get_font("domkrat-bold.ttf", 40).render("Счет", True, "White")
+    score_rect = score_text.get_rect()
+    score_rect.center = (WINDOW_WIDTH * 0.30, WINDOW_HEIGHT * 0.70)
+
+    score_number_text = get_font("domkrat-bold.ttf", 40).render(str(SCORE), True, "White")
+    score_number_rect = score_text.get_rect()
+    score_number_rect.center = (score_rect.center[0] * 1.05, score_rect.center[1] + TILE_SIZE * 1.5)
 
     back_button = Button(pygame.transform.scale(get_image("red_button.png"), (200, 50)), (120, 50), "НАЗАД",
                          get_font("domkrat-bold.ttf", 30), BUTTON_TEXT_COLOR, "White")
@@ -207,6 +243,8 @@ def play():
 
         SCREEN.blit(menu_text, menu_rect)
         SCREEN.blit(next_text, next_rect)
+        SCREEN.blit(score_text, score_rect)
+        SCREEN.blit(score_number_text, score_number_rect)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -253,6 +291,12 @@ def play():
                 # if tetromino has reached end of his way
                 fill_pos(grid, curr_fig_pos, curr_fig_code, curr_fig_n)
 
+                for line in get_full_lines(grid):
+                    remove_line(grid, line)
+                    SCORE += SCORE_NUMBER
+
+                score_number_text = get_font("domkrat-bold.ttf", 40).render(str(SCORE), True, "White")
+
                 curr_fig_n = next_fig_n
                 curr_fig_code = tetro_codes[next_fig_n]
                 curr_fig_pos = [int(BOARD_WIDTH / 2), 0]
@@ -275,7 +319,6 @@ def play():
                                                               TILE_SIZE - 4), 0, 2)
 
         # highlighting fall positions
-
         for cell in get_fall_cells(grid, curr_fig_pos, curr_fig_code):
             pygame.draw.rect(SCREEN, tetro_colors[curr_fig_n], pygame.Rect(board_begin_x + cell[0] * TILE_SIZE + 2,
                                                           board_begin_y + cell[1] * TILE_SIZE + 2,
