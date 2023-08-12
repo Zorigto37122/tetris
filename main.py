@@ -62,6 +62,11 @@ def fill_pos(grid, pos, code, tetro_n):
             continue
         grid[pos[1] + code[i][1]][pos[0] + code[i][0]] = tetro_n
 
+def rotate_tetro(tetro_code):
+    for i in range(4):
+        rep = tetro_code[i][0]
+        tetro_code[i][0] = -tetro_code[i][1]
+        tetro_code[i][1] = rep
 
 background_image = get_image("back.png")
 background_image = pygame.transform.scale(background_image, (WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -162,6 +167,11 @@ def play():
                     curr_fig_pos[0] += 1
                 if event.key == pygame.K_SPACE:
                     move_time = 0.05
+                if event.key == pygame.K_UP:
+                    if curr_fig_n != 3:
+                        clear_pos(grid, curr_fig_pos, curr_fig_code)
+                        rotate_tetro(curr_fig_code)
+                        fill_pos(grid, curr_fig_pos, curr_fig_code, curr_fig_n)
 
         for button in [back_button]:
             button.update(SCREEN)
