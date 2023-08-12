@@ -106,7 +106,8 @@ def get_fall_cells(grid, tetro_pos, tetro_code):
                 break
 
         for i in range(4):
-            fall_cells.append((end_pos[0] + tetro_code[i][0], end_pos[1] + tetro_code[i][1]))
+            if 0 <= (end_pos[0] + tetro_code[i][0]) < BOARD_WIDTH and 0 <= (end_pos[1] + tetro_code[i][1]) < BOARD_HEIGHT:
+                fall_cells.append((end_pos[0] + tetro_code[i][0], end_pos[1] + tetro_code[i][1]))
 
         return fall_cells
     else:
@@ -180,7 +181,7 @@ def play():
     next_text = get_font("domkrat-bold.ttf", 40).render("Следующая фигура:", True, "White")
     next_rect = next_text.get_rect()
     next_rect.center = (WINDOW_WIDTH * 0.73, WINDOW_HEIGHT * 0.23)
-    next_pos = (next_rect.center[0], next_rect.center[1] + TILE_SIZE * 3)
+    next_pos = (next_rect.center[0] * 0.985, next_rect.center[1] + TILE_SIZE * 2.5)
 
     back_button = Button(pygame.transform.scale(get_image("red_button.png"), (200, 50)), (120, 50), "НАЗАД",
                          get_font("domkrat-bold.ttf", 30), BUTTON_TEXT_COLOR, "White")
