@@ -124,6 +124,11 @@ def play():
     menu_rect = menu_text.get_rect()
     menu_rect.center = (WINDOW_WIDTH / 2, 70)
 
+    next_text = get_font("domkrat-bold.ttf", 40).render("Следующая фигура:", True, "White")
+    next_rect = next_text.get_rect()
+    next_rect.center = (WINDOW_WIDTH * 0.73, WINDOW_HEIGHT * 0.23)
+    next_pos = (next_rect.center[0], next_rect.center[1] + TILE_SIZE * 3)
+
     back_button = Button(pygame.transform.scale(get_image("red_button.png"), (200, 50)), (120, 50), "НАЗАД",
                          get_font("domkrat-bold.ttf", 30), BUTTON_TEXT_COLOR, "White")
 
@@ -145,7 +150,9 @@ def play():
         mouse_pos = pygame.mouse.get_pos()
 
         SCREEN.blit(background_image, (0, 0))
+
         SCREEN.blit(menu_text, menu_rect)
+        SCREEN.blit(next_text, next_rect)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -216,6 +223,16 @@ def play():
                                                               board_begin_y + j * TILE_SIZE + 3,
                                                               TILE_SIZE - 6,
                                                               TILE_SIZE - 6))
+
+        for i in range(4):
+            pygame.draw.rect(SCREEN, "white", pygame.Rect(next_pos[0] + tetro_codes[next_fig_n][i][0] * TILE_SIZE,
+                                                          next_pos[1] + tetro_codes[next_fig_n][i][1] * TILE_SIZE,
+                                                          TILE_SIZE,
+                                                          TILE_SIZE), 1)
+            pygame.draw.rect(SCREEN, tetro_colors[next_fig_n],
+                             pygame.Rect(next_pos[0] + tetro_codes[next_fig_n][i][0] * TILE_SIZE + 2,
+                                         next_pos[1] + tetro_codes[next_fig_n][i][1] * TILE_SIZE + 2,
+                                         TILE_SIZE - 4, TILE_SIZE - 4))
 
         # timer update
         if move_timer == 0:
