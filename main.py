@@ -148,6 +148,14 @@ def get_full_lines(grid):
     return lines
 
 
+def check_defeat(grid, next_pos, next_tetro):
+    for i in range(4):
+        if 0 <= (next_pos[0] + next_tetro[i][0]) < BOARD_WIDTH and 0 <= next_pos[1] + next_tetro[i][1] < BOARD_HEIGHT:
+            if grid[next_pos[1] + next_tetro[i][1]][next_pos[0] + next_tetro[i][0]] != 0:
+                return True
+    return False
+
+
 background_image = get_image("back.png")
 background_image = pygame.transform.scale(background_image, (WINDOW_WIDTH, WINDOW_HEIGHT))
 
@@ -198,9 +206,11 @@ def settings():
 
 
 def play():
-    global move_time
+    global MOVE_TIME
 
     SCORE = 0
+
+    # TEXTS
 
     menu_text = get_font("domkrat-bold.ttf", 90).render("TETRIS", True, "White")
     menu_rect = menu_text.get_rect()
@@ -219,6 +229,12 @@ def play():
     score_number_rect = score_text.get_rect()
     score_number_rect.center = (score_rect.center[0] * 1.05, score_rect.center[1] + TILE_SIZE * 1.5)
 
+    defeat_text = get_font("domkrat-bold.ttf", 100).render("Конец игры", True, "White")
+    defeat_rect = defeat_text.get_rect()
+    defeat_rect.center = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
+
+    # --------------------------------------------------------------------
+
     back_button = Button(pygame.transform.scale(get_image("red_button.png"), (200, 50)), (120, 50), "НАЗАД",
                          get_font("domkrat-bold.ttf", 30), BUTTON_TEXT_COLOR, "White")
 
@@ -226,13 +242,13 @@ def play():
     grid = [[0] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]
 
     curr_fig_n = random.randint(1, 6)
-    curr_fig_code = tetro_codes[curr_fig_n]
+    curr_fig_code = TETRO_CODES[curr_fig_n]
     curr_fig_pos = [int(BOARD_WIDTH / 2), 0]
 
     next_fig_n = random.randint(1, 6)
 
     run = True
-    move_timer = move_time * FPS
+    move_timer = MOVE_TIME * FPS
 
     while True:
         clock.tick(FPS)
@@ -265,7 +281,7 @@ def play():
                     curr_fig_pos[0] += 1
                     fill_pos(grid, curr_fig_pos, curr_fig_code, curr_fig_n)
                 if event.key == pygame.K_SPACE:
-                    move_time = 0.05
+                    MOVE_TIME= 0.05
                 if event.key == pygame.K_UP:
                     if curr_fig_n != 3:
                         clear_pos(grid, curr_fig_pos, curr_fig_code)
@@ -297,12 +313,15 @@ def play():
 
                 score_number_text = get_font("domkrat-bold.ttf", 40).render(str(SCORE), True, "White")
 
+                if check_defeat(grid, (int(BOARD_WIDTH / 2), 0), TETRO_CODES[next_fig_n]):
+                    run = False
+
                 curr_fig_n = next_fig_n
-                curr_fig_code = tetro_codes[next_fig_n]
                 curr_fig_pos = [int(BOARD_WIDTH / 2), 0]
+                curr_fig_code = TETRO_CODES[next_fig_n]
 
                 next_fig_n = random.randint(1, 6)
-                move_time = 0.4
+                MOVE_TIME = 0.4
 
         # board drawing
         for i in range(0, BOARD_WIDTH):
@@ -310,38 +329,44 @@ def play():
                 pygame.draw.rect(SCREEN, "#575353", pygame.Rect(board_begin_x + i * TILE_SIZE,
                                                               board_begin_y + j * TILE_SIZE,
                                                               TILE_SIZE,
-                                                              TILE_SIZE), grid_thick)
+                                                              TILE_SIZE), GRID_THICK, CELL_ANGLE)
 
                 if grid[j][i] != 0:
-                    pygame.draw.rect(SCREEN, tetro_colors[grid[j][i]], pygame.Rect(board_begin_x + i * TILE_SIZE + 2,
+                    pygame.draw.rect(SCREEN, TETRO_COLORS[grid[j][i]], pygame.Rect(board_begin_x + i * TILE_SIZE + 2,
                                                               board_begin_y + j * TILE_SIZE + 2,
                                                               TILE_SIZE - 4,
-                                                              TILE_SIZE - 4), 0, 2)
+                                                              TILE_SIZE - 4), 0, CELL_ANGLE)
 
         # highlighting fall positions
         for cell in get_fall_cells(grid, curr_fig_pos, curr_fig_code):
-            pygame.draw.rect(SCREEN, tetro_colors[curr_fig_n], pygame.Rect(board_begin_x + cell[0] * TILE_SIZE + 2,
+            if run:
+                pygame.draw.rect(SCREEN, TETRO_COLORS[curr_fig_n], pygame.Rect(board_begin_x + cell[0] * TILE_SIZE + 2,
                                                           board_begin_y + cell[1] * TILE_SIZE + 2,
                                                           TILE_SIZE - 4,
-                                                          TILE_SIZE - 4), 2, 5)
+                                                          TILE_SIZE - 4), 2, CELL_ANGLE)
 
         # display next figure
         for i in range(4):
-            pygame.draw.rect(SCREEN, "white", pygame.Rect(next_pos[0] + tetro_codes[next_fig_n][i][0] * TILE_SIZE,
-                                                          next_pos[1] + tetro_codes[next_fig_n][i][1] * TILE_SIZE,
+            pygame.draw.rect(SCREEN, "white", pygame.Rect(next_pos[0] + TETRO_CODES[next_fig_n][i][0] * TILE_SIZE,
+                                                          next_pos[1] + TETRO_CODES[next_fig_n][i][1] * TILE_SIZE,
                                                           TILE_SIZE,
-                                                          TILE_SIZE), grid_thick)
-            pygame.draw.rect(SCREEN, tetro_colors[next_fig_n],
-                             pygame.Rect(next_pos[0] + tetro_codes[next_fig_n][i][0] * TILE_SIZE + 2,
-                                         next_pos[1] + tetro_codes[next_fig_n][i][1] * TILE_SIZE + 2,
-                                         TILE_SIZE - 4, TILE_SIZE - 4))
+                                                          TILE_SIZE), GRID_THICK, 1)
+            pygame.draw.rect(SCREEN, TETRO_COLORS[next_fig_n],
+                             pygame.Rect(next_pos[0] + TETRO_CODES[next_fig_n][i][0] * TILE_SIZE + 2,
+                                         next_pos[1] + TETRO_CODES[next_fig_n][i][1] * TILE_SIZE + 2,
+                                         TILE_SIZE - 4, TILE_SIZE - 4), 0, CELL_ANGLE)
 
         # timer update
-        if move_timer == 0:
-            move_timer = move_time * FPS
-        move_timer -= 1
+        if move_timer == 0 and run:
+            move_timer = MOVE_TIME * FPS
+        else:
+            move_timer -= 1
 
         # ----------------------- main game logic (end) -------------------------------------
+
+        if not run:
+            pygame.draw.rect(SCREEN, "black", defeat_rect)
+            SCREEN.blit(defeat_text, defeat_rect)
 
         pygame.display.flip()
 
