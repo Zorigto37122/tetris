@@ -1,6 +1,7 @@
 import pygame, sys, random
 from Button import Button
 from config import *
+from pygame import mixer
 
 
 pygame.init()
@@ -10,6 +11,14 @@ WINDOW_WIDTH = SCREEN.get_width()
 WINDOW_HEIGHT = SCREEN.get_height()
 WINDOW_CENTER_X = WINDOW_WIDTH / 2
 WINDOW_CENTER_Y = WINDOW_HEIGHT / 2
+
+mixer.init()
+theme = mixer.Sound("assets/music/theme.mp3")
+theme.play(-1)
+theme.set_volume(0.15)
+
+line_dodge_sound = mixer.Sound("assets/music/line_dodge.wav")
+line_dodge_sound.set_volume(0.20)
 
 clock = pygame.time.Clock()
 
@@ -154,7 +163,6 @@ def remove_line(grid, line_n):
         return -1
 
     for i in range(line_n, 0, -1):
-        print(grid[i])
         grid[i] = grid[i - 1].copy()
 
 
@@ -339,6 +347,7 @@ def play():
                     for line in get_full_lines(grid):
                         remove_line(grid, line)
                         SCORE += SCORE_NUMBER
+                        line_dodge_sound.play()
 
                     if check_defeat(grid, (int(BOARD_WIDTH / 2), 0), TETRO_CODES[next_fig_n]):
                         run = False
@@ -379,6 +388,7 @@ def play():
                 for line in get_full_lines(grid):
                     remove_line(grid, line)
                     SCORE += SCORE_NUMBER
+                    line_dodge_sound.play()
 
                 score_number_text = get_font("domkrat-bold.ttf", 35).render(str(SCORE), True, "White")
 
