@@ -11,9 +11,6 @@ WINDOW_HEIGHT = SCREEN.get_height()
 WINDOW_CENTER_X = WINDOW_WIDTH / 2
 WINDOW_CENTER_Y = WINDOW_HEIGHT / 2
 
-SCORE = 0
-
-
 clock = pygame.time.Clock()
 
 
@@ -116,6 +113,34 @@ def get_fall_cells(grid, tetro_pos, tetro_code):
         return []
 
 
+def get_end_pos(grid, tetro_pos, tetro_code):
+    x = tetro_pos[0]
+    y = tetro_pos[1]
+
+    if (0 <= x < BOARD_WIDTH) and (0 <= y < BOARD_HEIGHT):
+        end = False
+
+        for yi in range(y + 1, BOARD_HEIGHT):
+
+            for i in range(4):
+                if check_own_cells((x + tetro_code[i][0], yi + tetro_code[i][1]), tetro_pos, tetro_code):
+                    continue
+
+                if (yi + tetro_code[i][1]) >= BOARD_HEIGHT or 0 < (x + tetro_code[i][0]) >= BOARD_WIDTH:
+                    continue
+
+                if grid[yi + tetro_code[i][1]][x + tetro_code[i][0]] != 0:
+                    return x, yi - 1
+
+                if (yi + tetro_code[i][1]) == (BOARD_HEIGHT - 1):
+                    return x, yi
+
+            if end:
+                break
+    else:
+        return ()
+
+
 # checks out does cell belong to given tetromino
 def check_own_cells(cell_pos, tetro_pos, tetro_code):
     for i in range(4):
@@ -210,22 +235,33 @@ def play():
 
     SCORE = 0
 
+    level_value_text = get_font("domkrat-bold.ttf", 35).render("Легкий", True, "White")
+
+    if DIFFICULTY == "EASY":
+        MOVE_TIME = EASY_DIFFICULTY_TIME
+    if DIFFICULTY == "MIDDLE":
+        MOVE_TIME = MIDDLE_DIFFICULTY_TIME
+        level_value_text = get_font("domkrat-bold.ttf", 35).render("Средний", True, "White")
+    if DIFFICULTY == "HARD":
+        MOVE_TIME = HARD_DIFFICULTY_TIME
+        level_value_text = get_font("domkrat-bold.ttf", 35).render("Сложный", True, "White")
+
     # TEXTS
 
     menu_text = get_font("domkrat-bold.ttf", 90).render("TETRIS", True, "White")
     menu_rect = menu_text.get_rect()
     menu_rect.center = (WINDOW_WIDTH / 2, 70)
 
-    next_text = get_font("domkrat-bold.ttf", 40).render("Следующая фигура:", True, "White")
+    next_text = get_font("domkrat-bold.ttf", 35).render("Следующая фигура:", True, "White")
     next_rect = next_text.get_rect()
     next_rect.center = (WINDOW_WIDTH * 0.73, WINDOW_HEIGHT * 0.23)
-    next_pos = (next_rect.center[0] * 0.985, next_rect.center[1] + TILE_SIZE * 2.5)
+    next_pos = (next_rect.center[0] * 0.995, next_rect.center[1] + TILE_SIZE * 2.5)
 
-    score_text = get_font("domkrat-bold.ttf", 40).render("Счет", True, "White")
+    score_text = get_font("domkrat-bold.ttf", 35).render("Счет", True, "White")
     score_rect = score_text.get_rect()
     score_rect.center = (WINDOW_WIDTH * 0.30, WINDOW_HEIGHT * 0.70)
 
-    score_number_text = get_font("domkrat-bold.ttf", 40).render(str(SCORE), True, "White")
+    score_number_text = get_font("domkrat-bold.ttf", 35).render(str(SCORE), True, "White")
     score_number_rect = score_text.get_rect()
     score_number_rect.center = (score_rect.center[0] * 1.05, score_rect.center[1] + TILE_SIZE * 1.5)
 
@@ -233,10 +269,18 @@ def play():
     defeat_rect = defeat_text.get_rect()
     defeat_rect.center = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
 
-    # --------------------------------------------------------------------
+    level_text = get_font("domkrat-bold.ttf", 35).render("Уровень:", True, "White")
+    level_rect = level_text.get_rect()
+    level_rect.center = (WINDOW_WIDTH * 0.30, WINDOW_HEIGHT * 0.23)
+
+    level_value_rect = level_value_text.get_rect()
+    level_value_rect.center = (WINDOW_WIDTH * 0.30, WINDOW_HEIGHT * 0.28)
 
     back_button = Button(pygame.transform.scale(get_image("red_button.png"), (200, 50)), (120, 50), "НАЗАД",
                          get_font("domkrat-bold.ttf", 30), BUTTON_TEXT_COLOR, "White")
+
+    # --------------------------------------------------------------------
+
 
     # list containing board information
     grid = [[0] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]
@@ -261,6 +305,13 @@ def play():
         SCREEN.blit(next_text, next_rect)
         SCREEN.blit(score_text, score_rect)
         SCREEN.blit(score_number_text, score_number_rect)
+        SCREEN.blit(level_text, level_rect)
+        SCREEN.blit(level_value_text, level_value_rect)
+
+
+        end_of_curr = False
+
+        keys = pygame.key.get_pressed()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -281,7 +332,26 @@ def play():
                     curr_fig_pos[0] += 1
                     fill_pos(grid, curr_fig_pos, curr_fig_code, curr_fig_n)
                 if event.key == pygame.K_SPACE:
-                    MOVE_TIME= 0.05
+                    clear_pos(grid, curr_fig_pos, curr_fig_code)
+                    curr_fig_pos = get_end_pos(grid, curr_fig_pos, curr_fig_code)
+                    fill_pos(grid, curr_fig_pos, curr_fig_code, curr_fig_n)
+
+                    for line in get_full_lines(grid):
+                        remove_line(grid, line)
+                        SCORE += SCORE_NUMBER
+
+                    if check_defeat(grid, (int(BOARD_WIDTH / 2), 0), TETRO_CODES[next_fig_n]):
+                        run = False
+
+                    curr_fig_n = next_fig_n
+                    curr_fig_pos = [int(BOARD_WIDTH / 2), 0]
+                    curr_fig_code = TETRO_CODES[next_fig_n]
+                    next_fig_n = random.randint(1, 6)
+
+                    move_timer = MOVE_TIME * FPS + FPS / 2
+                    end_of_curr = True
+                if event.key == pygame.K_DOWN:
+                    move_timer = 0
                 if event.key == pygame.K_UP:
                     if curr_fig_n != 3:
                         clear_pos(grid, curr_fig_pos, curr_fig_code)
@@ -297,12 +367,11 @@ def play():
         board_begin_x = WINDOW_CENTER_X - (BOARD_WIDTH * TILE_SIZE) / 2
         board_begin_y = WINDOW_CENTER_Y - (BOARD_HEIGHT * TILE_SIZE) / 2
 
-        if move_timer == 0:
+        if move_timer == 0 and not end_of_curr:
             clear_pos(grid, curr_fig_pos, curr_fig_code)
 
             if fill_pos(grid, (curr_fig_pos[0], curr_fig_pos[1] + 1), curr_fig_code, curr_fig_n) != -1:
                 curr_fig_pos[1] += 1
-                fill_pos(grid, curr_fig_pos, curr_fig_code, curr_fig_n)
             else:
                 # if tetromino has reached end of his way
                 fill_pos(grid, curr_fig_pos, curr_fig_code, curr_fig_n)
@@ -311,17 +380,18 @@ def play():
                     remove_line(grid, line)
                     SCORE += SCORE_NUMBER
 
-                score_number_text = get_font("domkrat-bold.ttf", 40).render(str(SCORE), True, "White")
+                score_number_text = get_font("domkrat-bold.ttf", 35).render(str(SCORE), True, "White")
 
                 if check_defeat(grid, (int(BOARD_WIDTH / 2), 0), TETRO_CODES[next_fig_n]):
                     run = False
+
+                move_timer = 1
 
                 curr_fig_n = next_fig_n
                 curr_fig_pos = [int(BOARD_WIDTH / 2), 0]
                 curr_fig_code = TETRO_CODES[next_fig_n]
 
                 next_fig_n = random.randint(1, 6)
-                MOVE_TIME = 0.4
 
         # board drawing
         for i in range(0, BOARD_WIDTH):
@@ -350,7 +420,7 @@ def play():
             pygame.draw.rect(SCREEN, "white", pygame.Rect(next_pos[0] + TETRO_CODES[next_fig_n][i][0] * TILE_SIZE,
                                                           next_pos[1] + TETRO_CODES[next_fig_n][i][1] * TILE_SIZE,
                                                           TILE_SIZE,
-                                                          TILE_SIZE), GRID_THICK, 1)
+                                                          TILE_SIZE), GRID_THICK, CELL_ANGLE)
             pygame.draw.rect(SCREEN, TETRO_COLORS[next_fig_n],
                              pygame.Rect(next_pos[0] + TETRO_CODES[next_fig_n][i][0] * TILE_SIZE + 2,
                                          next_pos[1] + TETRO_CODES[next_fig_n][i][1] * TILE_SIZE + 2,
@@ -382,7 +452,6 @@ def main_menu():
                              get_font("domkrat-bold.ttf", 55), BUTTON_TEXT_COLOR, "White")
     quit_button = Button(get_image("red_button.png"), (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 200), "ВЫЙТИ",
                          get_font("domkrat-bold.ttf", 55), BUTTON_TEXT_COLOR, "White")
-
 
     while True:
         clock.tick(FPS)
